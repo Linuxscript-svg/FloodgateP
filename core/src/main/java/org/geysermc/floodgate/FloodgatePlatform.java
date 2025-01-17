@@ -35,6 +35,7 @@ import org.geysermc.floodgate.api.event.FloodgateEventBus;
 import org.geysermc.floodgate.api.handshake.HandshakeHandlers;
 import org.geysermc.floodgate.api.inject.PlatformInjector;
 import org.geysermc.floodgate.api.link.PlayerLink;
+import org.geysermc.floodgate.api.logger.FloodgateLogger;
 import org.geysermc.floodgate.api.packet.PacketHandlers;
 import org.geysermc.floodgate.config.FloodgateConfig;
 import org.geysermc.floodgate.event.EventBus;
@@ -48,6 +49,8 @@ public class FloodgatePlatform {
 
     @Inject private FloodgateConfig config;
     @Inject private Injector guice;
+    @Inject
+    private FloodgateLogger logger;
 
     @Inject
     public void init(
