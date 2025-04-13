@@ -100,18 +100,18 @@ public class FormChannel implements PluginMessageChannel {
     }
 
     public boolean sendForm(UUID player, Form form) {
-        byte[] formData = createFormData(form);
         // Player can only open one form at a time, so we make old ones invalid
         playerRemoved(player);
-        uuidForms.put(player, getFormId(formData));
+        byte[] formData = createFormData(player, form);
         return pluginMessageUtils.sendMessage(player, getIdentifier(), formData);
     }
 
-    public byte[] createFormData(Form form) {
+    public byte[] createFormData(UUID player, Form form) {
         short formId = getNextFormId();
         if (config.isProxy()) {
             formId |= 0x8000;
         }
+        uuidForms.put(player, formId);
         storedForms.put(formId, form);
 
         FormDefinition<Form, ?, ?> definition = formDefinitions.definitionFor(form);
