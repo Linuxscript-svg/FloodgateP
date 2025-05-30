@@ -13,11 +13,13 @@ indra {
 dependencies {
     api(projects.core)
     implementation("org.incendo", "cloud-velocity", Versions.cloudVersion)
+    implementation("org.mariadb.jdbc", "mariadb-java-client", "3.4.1")
 }
 
 relocate("org.incendo.cloud")
-// used in cloud
+// used in cloud44
 relocate("io.leangen.geantyref")
+relocate("org.mariadb")
 
 
 // these dependencies are already present on the platform
@@ -27,3 +29,4 @@ provided("com.google.inject", "guice", Versions.guiceVersion)
 provided("org.yaml", "snakeyaml", Versions.snakeyamlVersion) // included in Configurate
 provided("com.velocitypowered", "velocity-api", velocityVersion)
 provided("org.apache.logging.log4j", "log4j-core", log4jVersion)
+provided("org.geysermc.cumulus", "cumulus", Versions.cumulusVersion)

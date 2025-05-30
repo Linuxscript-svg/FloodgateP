@@ -61,6 +61,7 @@ import org.geysermc.floodgate.skin.SkinDataImpl;
 import org.geysermc.floodgate.util.Constants;
 import org.geysermc.floodgate.util.LanguageManager;
 import org.geysermc.floodgate.util.MojangUtils;
+import org.geysermc.floodgate.util.VelocityRenameUtil;
 
 public final class VelocityListener {
     private static final Field INITIAL_MINECRAFT_CONNECTION;
@@ -156,6 +157,16 @@ public final class VelocityListener {
     public void onGameProfileRequest(GameProfileRequestEvent event, Continuation continuation) {
         FloodgatePlayer player = playerCache.getIfPresent(event.getConnection());
         if (player == null) {
+
+            String rename = VelocityRenameUtil.lookupName(event.getGameProfile().getId(), event.getUsername(),"pc");
+            System.out.println(String.format("Checked UserName based: %s, lookup: %s", event.getUsername(), rename));
+            if (rename != null && !rename.equals(event.getUsername())) {
+                event.setGameProfile(new GameProfile(
+                        event.getGameProfile().getUndashedId(),
+                        rename,
+                        List.of(DEFAULT_TEXTURE_PROPERTY)
+                ));
+            }
             continuation.resume();
             return;
         }

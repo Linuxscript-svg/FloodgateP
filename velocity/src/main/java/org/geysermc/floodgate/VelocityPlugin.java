@@ -31,7 +31,9 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
+import com.zaxxer.hikari.HikariDataSource;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import org.geysermc.floodgate.api.logger.FloodgateLogger;
 import org.geysermc.floodgate.module.CommandModule;
 import org.geysermc.floodgate.module.PluginMessageModule;
@@ -43,6 +45,11 @@ import org.geysermc.floodgate.util.ReflectionUtils;
 
 public final class VelocityPlugin {
     private final FloodgatePlatform platform;
+    private static HikariDataSource dataSource;
+
+    public static HikariDataSource getDataSource() {
+        return dataSource;
+    }
 
     @Inject
     public VelocityPlugin(@DataDirectory Path dataDirectory, Injector guice) {
@@ -69,6 +76,21 @@ public final class VelocityPlugin {
                 new VelocityAddonModule(),
                 new PluginMessageModule()
         );
+
+
+        if (platform.isForceUserName()) {
+            dataSource = new HikariDataSource();
+
+            dataSource.setDriverClassName("org.mariadb.jdbc.Driver");
+            dataSource.setJdbcUrl(platform.getMysqlurl());
+            dataSource.setUsername(platform.getMysqluser());
+            dataSource.setPassword(platform.getMysqlpass());
+            try {
+                dataSource.getConnection().close();
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
+        }
     }
 
     @Subscribe
