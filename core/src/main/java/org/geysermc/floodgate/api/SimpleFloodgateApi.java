@@ -200,6 +200,8 @@ public class SimpleFloodgateApi implements FloodgateApi {
     }
 
     public void playerRemoved(UUID correctUuid) {
+        // Notify the FormChannel that the player has been removed
+        pluginMessageManager.getChannel(FormChannel.class).playerRemoved(correctUuid);
         // we can remove the player directly if it is a Floodgate UUID.
         // since it's stored by their Floodgate UUID
         if (isFloodgateId(correctUuid)) {

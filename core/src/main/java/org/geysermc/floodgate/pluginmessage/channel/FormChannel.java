@@ -27,6 +27,9 @@ package org.geysermc.floodgate.pluginmessage.channel;
 
 import com.google.common.base.Charsets;
 import com.google.inject.Inject;
+import it.unimi.dsi.fastutil.objects.Object2ShortMap;
+import it.unimi.dsi.fastutil.objects.Object2ShortMaps;
+import it.unimi.dsi.fastutil.objects.Object2ShortOpenHashMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMaps;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
@@ -44,7 +47,10 @@ public class FormChannel implements PluginMessageChannel {
     private final FormDefinitions formDefinitions = FormDefinitions.instance();
     private final Short2ObjectMap<Form> storedForms =
             Short2ObjectMaps.synchronize(new Short2ObjectOpenHashMap<>());
-    private final AtomicInteger nextFormId = new AtomicInteger(0);
+    // Tracking for players last opened form
+    private final Object2ShortMap<UUID> uuidForms =
+            Object2ShortMaps.synchronize(new Object2ShortOpenHashMap<>());
+    private final AtomicInteger nextFormId = new AtomicInteger(1);
 
     @Inject private PluginMessageUtils pluginMessageUtils;
     @Inject private FloodgateConfig config;
@@ -94,15 +100,18 @@ public class FormChannel implements PluginMessageChannel {
     }
 
     public boolean sendForm(UUID player, Form form) {
-        byte[] formData = createFormData(form);
+        // Player can only open one form at a time, so we make old ones invalid
+        playerRemoved(player);
+        byte[] formData = createFormData(player, form);
         return pluginMessageUtils.sendMessage(player, getIdentifier(), formData);
     }
 
-    public byte[] createFormData(Form form) {
+    public byte[] createFormData(UUID player, Form form) {
         short formId = getNextFormId();
         if (config.isProxy()) {
             formId |= 0x8000;
         }
+        uuidForms.put(player, formId);
         storedForms.put(formId, form);
 
         FormDefinition<Form, ?, ?> definition = formDefinitions.definitionFor(form);
@@ -143,5 +152,20 @@ public class FormChannel implements PluginMessageChannel {
         // signed bit is used to check if the form is from a proxy or a server
         return (short) nextFormId.getAndUpdate(
                 (number) -> number == Short.MAX_VALUE ? 0 : number + 1);
+    }
+
+    public void playerRemoved(UUID correctUuid) {
+        short key = uuidForms.removeShort(correctUuid);
+        if (key != 0) {
+            Form storedForm = storedForms.remove(key);
+            if (storedForm != null) {
+                try {
+                    formDefinitions.definitionFor(storedForm)
+                            .handleFormResponse(storedForm, "null");
+                } catch (Exception e) {
+                    logger.error("Error while processing form response!", e);
+                }
+            }
+        }
     }
 }
