@@ -57,7 +57,6 @@ import org.geysermc.floodgate.api.ProxyFloodgateApi;
 import org.geysermc.floodgate.api.logger.FloodgateLogger;
 import org.geysermc.floodgate.api.player.FloodgatePlayer;
 import org.geysermc.floodgate.config.ProxyFloodgateConfig;
-import org.geysermc.floodgate.skin.SkinDataImpl;
 import org.geysermc.floodgate.util.Constants;
 import org.geysermc.floodgate.util.LanguageManager;
 import org.geysermc.floodgate.util.MojangUtils;
@@ -156,48 +155,19 @@ public final class VelocityListener {
     @Subscribe(order = PostOrder.EARLY)
     public void onGameProfileRequest(GameProfileRequestEvent event, Continuation continuation) {
         FloodgatePlayer player = playerCache.getIfPresent(event.getConnection());
-        if (player == null) {
+        String lookUpType = player == null ? "pc" : "pe";
+        String rename = VelocityRenameUtil.lookupName(event.getGameProfile().getId(), event.getUsername(), lookUpType);
 
-            String rename = VelocityRenameUtil.lookupName(event.getGameProfile().getId(), event.getUsername(),"pc");
-            System.out.println(String.format("Checked UserName based: %s, lookup: %s", event.getUsername(), rename));
-            if (rename != null && !rename.equals(event.getUsername())) {
-                event.setGameProfile(new GameProfile(
-                        event.getGameProfile().getUndashedId(),
-                        rename,
-                        List.of(DEFAULT_TEXTURE_PROPERTY)
-                ));
-            }
-            continuation.resume();
-            return;
-        }
-        playerCache.invalidate(event.getConnection());
-
-        // Skin look up (on Spigot and friends) would result in it failing, so apply a default skin
-        if (!player.isLinked()) {
+        if (rename != null && !rename.equals(event.getUsername())) {
             event.setGameProfile(new GameProfile(
-                    player.getCorrectUniqueId(),
-                    player.getCorrectUsername(),
+                    event.getGameProfile().getUndashedId(),
+                    rename,
                     List.of(DEFAULT_TEXTURE_PROPERTY)
             ));
-            continuation.resume();
-            return;
+            logger.info("Checked UserName based: {}, lookup: {}", event.getUsername(), rename);
         }
-
-        // Floodgate players are seen as offline mode players, meaning we have to look up
-        // the linked player's textures ourselves
-
-        mojangUtils.skinFor(player.getJavaUniqueId())
-                .exceptionally(exception -> {
-                    logger.debug("Unexpected skin fetch error for " + player.getJavaUniqueId(), exception);
-                    return SkinDataImpl.DEFAULT_SKIN;
-                }).thenAccept(skin -> {
-                    event.setGameProfile(new GameProfile(
-                            player.getCorrectUniqueId(),
-                            player.getCorrectUsername(),
-                            List.of(new Property("textures", skin.value(), skin.signature()))
-                    ));
-                    continuation.resume();
-                });
+        continuation.resume();
+        playerCache.invalidate(event.getConnection());
     }
 
     @Subscribe(order = PostOrder.LAST)
