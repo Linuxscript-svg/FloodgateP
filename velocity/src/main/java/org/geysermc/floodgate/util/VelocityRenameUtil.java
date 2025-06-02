@@ -36,36 +36,19 @@ import org.geysermc.floodgate.VelocityPlugin;
 public class VelocityRenameUtil {
 
     public static String lookupName(final UUID id, final String name, final String type) {
-        try {
-            final Connection conn = VelocityPlugin.getDataSource().getConnection();
-            try {
-                final PreparedStatement sql = conn.prepareStatement(
-                        "select name from localprofile where id = ?");
-                try {
-                    sql.setString(1, id.toString());
-                    final ResultSet set = sql.executeQuery();
-                    try {
-                        if (set.next()) {
-                            return set.getString("name");
-                        }
-                        String modify = modify(id, name, type, conn);
-                        return modify;
-                    } finally {
-                        if (Collections.singletonList(set).get(0) != null) {
-                            set.close();
-                        }
+        try (Connection conn = VelocityPlugin.getDataSource().getConnection()){
+            try (PreparedStatement sql = conn.prepareStatement(
+                    "SELECT name FROM localprofile WHERE id = ?")){
+                sql.setString(1, id.toString());
+                try (ResultSet set = sql.executeQuery()){
+                    if (set.next()){
+                        return set.getString("name");
+                    } else {
+                        return modify(id, name, type, conn);
                     }
-                } finally {
-                    if (Collections.singletonList(sql).get(0) != null) {
-                        sql.close();
-                    }
-                }
-            } finally {
-                if (Collections.singletonList(conn).get(0) != null) {
-                    conn.close();
                 }
             }
-        } catch (Throwable $ex) {
+        } catch (SQLException e) {
             return name;
         }
     }
@@ -76,7 +59,7 @@ public class VelocityRenameUtil {
         int count = 0;
         while (true) {
             final PreparedStatement sql = conn.prepareStatement(
-                    "insert into localprofile(id, name, name_origin, pc_pe) value(? ,?, ?, ?)");
+                    "INSERT INTO localprofile(id, name, name_origin, pc_pe) value(? ,?, ?, ?)");
             String nameBp = name;
             try {
                 sql.setString(1, id.toString());
