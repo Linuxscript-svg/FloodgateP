@@ -159,7 +159,7 @@ public final class VelocityListener {
             String rename = VelocityRenameUtil.lookupName(event.getGameProfile().getId(), event.getUsername(),"pc");
             if (rename != null && !rename.equals(event.getUsername())) {
                 event.setGameProfile(new GameProfile(
-                        event.getGameProfile().getUndashedId(),
+                        event.getGameProfile().getId(),
                         rename,
                         List.of(DEFAULT_TEXTURE_PROPERTY)
                 ));
@@ -168,13 +168,14 @@ public final class VelocityListener {
             return;
         } else {
             String rename = VelocityRenameUtil.lookupName(player.getCorrectUniqueId(), player.getCorrectUsername(),"pe");
-            if (rename != null && !rename.equals(event.getUsername())) {
-                event.setGameProfile(new GameProfile(
-                        player.getCorrectUniqueId(),
-                        rename,
-                        List.of(DEFAULT_TEXTURE_PROPERTY)
-                ));
+            if (rename == null || rename.isBlank()) {
+                rename = player.getCorrectUsername();
             }
+            event.setGameProfile(new GameProfile(
+                    player.getCorrectUniqueId(),
+                    rename,
+                    List.of(DEFAULT_TEXTURE_PROPERTY)
+            ));
             playerCache.invalidate(event.getConnection());
             continuation.resume();
         }
