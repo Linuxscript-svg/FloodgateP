@@ -54,30 +54,35 @@ public class VelocityRenameUtil {
     }
 
     private static String modify(final UUID id, final String name, final String type,
-                          final Connection conn) throws SQLException {
+                                 final Connection conn) throws SQLException {
         String mod = name;
         int count = 0;
+
         while (true) {
-            final PreparedStatement sql = conn.prepareStatement(
-                    "INSERT INTO localprofile(id, name, name_origin, pc_pe) value(? ,?, ?, ?)");
-            String nameBp = name;
-            try {
+            try (PreparedStatement sql = conn.prepareStatement(
+                    "INSERT INTO localprofile(id, name, name_origin, pc_pe) VALUES (?, ?, ?, ?)")) {
                 sql.setString(1, id.toString());
                 sql.setString(2, mod);
                 sql.setString(3, name);
                 sql.setString(4, type.toLowerCase());
-                try {
-                    sql.executeUpdate();
-                    return mod;
-                } catch (SQLException e) {
+
+                sql.executeUpdate();
+                return mod;
+            } catch (SQLException e) {
+                String msg = e.getMessage();
+                if (msg.contains("Duplicate entry") && msg.contains("PRIMARY")) {
+                    // UUID（id）已经存在，说明已有记录，直接返回原始名称即可
+                    return name;
+                } else if (msg.contains("Duplicate entry") && msg.contains("'name'")) {
+                    // 名字冲突，尝试新的名字
                     ++count;
-                    int usernameLength = Math.min(nameBp.length(), 16 - 3);
-                    String relName = nameBp.substring(0, usernameLength);
-                    mod = relName + ("_" + count);
-                }
-            } finally {
-                if (Collections.singletonList(sql).get(0) != null) {
-                    sql.close();
+                    int usernameLength = Math.min(name.length(), 13); // 确保不超过16个字符
+                    if (count >= 10) {
+                        usernameLength = usernameLength - 1;
+                    }
+                    mod = name.substring(0, usernameLength) + "_" + count;
+                } else {
+                    e.printStackTrace();
                 }
             }
         }
