@@ -48,14 +48,6 @@ jobs:
         env:
           BUILD_NUMBER: ${{ steps.release-info.outputs.curentRelease }}
 
-      - name: Archive artifacts (Floodgate Bungee)
-        # See https://github.com/actions/upload-artifact/commits
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
-        if: success()
-        with:
-          name: Floodgate Bungee
-          path: bungee/build/libs/floodgate-bungee.jar
-          if-no-files-found: error
 
       - name: Archive artifacts (Floodgate Spigot)
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
