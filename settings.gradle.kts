@@ -61,7 +61,6 @@ rootProject.name = "floodgate-parent"
 include(":api")
 include(":ap")
 include(":core")
-include(":bungee")
 include(":spigot")
 include(":velocity")
 include(":sqlite")
